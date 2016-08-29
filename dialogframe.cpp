@@ -1,0 +1,39 @@
+#include "dialogframe.h"
+#include "ui_dialogframe.h"
+#include <QDate>
+
+DialogFrame::DialogFrame(std::shared_ptr<Message> message, QWidget *parent) :
+    QFrame(parent),
+    ui(new Ui::DialogFrame)
+{
+    ui->setupUi(this);
+    ui->text->setText(QString::fromStdString(message->getText()));
+    QDateTime date = QDateTime::fromMSecsSinceEpoch(message->getDate());
+    if(date.date() == QDateTime::currentDateTime().date())
+    {
+        QString time = QString::number(date.time().hour());
+        time += ':';
+        time += QString::number(date.time().minute());
+        ui->label->setText(time);
+    }
+    else
+    {
+        QString timeD = QString::number(date.date().day());
+        timeD += '.';
+        timeD += QString::number(date.date().month());
+        timeD += '.';
+        timeD += QString::number(date.date().year());
+        ui->label->setText(timeD);
+    }
+
+}
+
+DialogFrame::~DialogFrame()
+{
+    delete ui;
+}
+
+void DialogFrame::finished()
+{
+
+}

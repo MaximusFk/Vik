@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/icons/tabs">
+        <file>music-notes.png</file>
+        <file>chat.png</file>
+        <file>friends.png</file>
+    </qresource>
+    <qresource prefix="/icons/buttons">
+        <file>download-button.png</file>
+        <file>media-play-symbol.png</file>
+        <file>pause.png</file>
+        <file>smile-button.png</file>
+        <file>add-button.png</file>
+    </qresource>
+</RCC>
