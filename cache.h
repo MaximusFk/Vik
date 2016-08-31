@@ -5,6 +5,7 @@
 #include <QMap>
 #include <QQueue>
 #include <QBuffer>
+#include <QDir>
 
 class FileDownloader;
 
@@ -12,12 +13,14 @@ class Cache : public QObject
 {
     Q_OBJECT
 public:
-    explicit Cache(QObject *parent = 0);
+    explicit Cache(QObject *parent = nullptr);
+    Cache(QDir * path, QObject * parent = nullptr);
 
     void enqueue(QString);
 
     QByteArray * getData(QString);
     bool resetBuffer(QString);
+    void cancel();
 
 private:
     void updateStatus();
@@ -37,6 +40,7 @@ private:
     QQueue<QString> queue;
     QByteArray * current;
     QBuffer * buffer;
+    QDir * cacheDir;
 };
 
 #endif // CACHE_H

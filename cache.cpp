@@ -1,12 +1,21 @@
 #include "cache.h"
 #include "updatethread.h"
 
+#include <QFile>
+
 Cache::Cache(QObject *parent) :
     QObject(parent),
     downloader(nullptr),
     current(nullptr),
-    buffer(nullptr)
+    buffer(nullptr),
+    cacheDir(nullptr)
 {
+}
+
+Cache::Cache(QDir *path, QObject *parent) :
+    Cache(parent)
+{
+    cacheDir = path;
 }
 
 void Cache::enqueue(QString uri)
@@ -33,7 +42,22 @@ QByteArray * Cache::getData(QString uri)
     }
 }
 
-
+void Cache::cancel()
+{
+    if(downloader != nullptr)
+    {
+        delete current;
+        current = nullptr;
+        disconnect(downloader, &FileDownloader::progressDownload, this, &Cache::_proccess);
+        disconnect(downloader, &FileDownloader::finishedDownload, this, &Cache::_finished);
+        downloader->deleteLater();
+        downloader = nullptr;
+        buffer->deleteLater();
+        buffer = nullptr;
+        downloader->deleteLater();
+        downloader = nullptr;
+    }
+}
 
 void Cache::updateStatus()
 {
