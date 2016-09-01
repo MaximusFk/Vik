@@ -25,6 +25,11 @@ static bool i(const char * text)
     file.close();
     return true;
 }
+
+static bool i(std::string str)
+{
+    return i(str.c_str());
+}
 }
 
 #endif // LOG_H
