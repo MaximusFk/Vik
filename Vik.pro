@@ -26,7 +26,8 @@ SOURCES += main.cpp\
     downloadframe.cpp \
     cache.cpp \
     audioplayer.cpp \
-    contentframe.cpp
+    contentframe.cpp \
+    framefactory.cpp
 
 HEADERS  += mainwindow.h \
     audioframe.h \
@@ -39,7 +40,8 @@ HEADERS  += mainwindow.h \
     downloadframe.h \
     cache.h \
     audioplayer.h \
-    contentframe.h
+    contentframe.h \
+    framefactory.h
 
 FORMS    += mainwindow.ui \
     audioframe.ui \
