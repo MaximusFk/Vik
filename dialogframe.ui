@@ -14,7 +14,7 @@
    <string>Frame</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">background-color: qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:1, stop:0.359091 rgba(80, 123, 192, 97), stop:1 rgba(255, 255, 255, 255));</string>
+   <string notr="true">background-color: rgb(168, 201, 255);</string>
   </property>
   <property name="frameShape">
    <enum>QFrame::StyledPanel</enum>
@@ -78,7 +78,7 @@
     <bool>true</bool>
    </property>
    <property name="wordWrap">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="margin">
     <number>10</number>

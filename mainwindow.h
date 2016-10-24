@@ -2,13 +2,10 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QList>
 
 #include <QWheelEvent>
 #include <QResizeEvent>
-
-#include "audioframe.h"
-#include "messageframe.h"
-#include "loginwidget.h"
 #include <account.h>
 
 #include <vkobjectfactory.h>
@@ -19,15 +16,24 @@
 namespace Ui {
 class MainWindow;
 }
-static constexpr char * dasha = "190529637";
+
+class LoginWidget;
+class Cache;
+class AudioPlayer;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+
+    VKObjectFactory * factory;
+
     std::shared_ptr<Account> account;
-    LoginWidget *login;
+    LoginWidget * login;
 
     UpdateThread * updater;
+    UpdateThread * update_loop;
+    Cache * mainCache;
+    AudioPlayer * audioPlayer;
 
     struct Page
     {
@@ -37,25 +43,43 @@ class MainWindow : public QMainWindow
     Page audio_page;
     Page message_page;
 
+    enum State
+    {
+        IDLE = -1,
+        DIALOG_LOADING,
+        MESSAGE_LOADING,
+        AUDIO_LOADING
+    }
+    current_state;
+
+    QList<std::shared_ptr<IVKObject>> object_buffer;
+
+    std::shared_ptr<User> user;
+
 private:
     void saveAccountToDisk();
     bool loadAccountFromDisk();
-    void printAccount();
     void showLoginWindow();
 
     void updateMessages(nlohmann::json);
     void loadAudios(nlohmann::json json);
+
+    void changeState(State);
+
+    void constructFrameFromBuffer(State);
+
+    void clearAllChildren(QWidget *);
 
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 protected:
     void wheelEvent(QWheelEvent *) override;
-    void resizeEvent(QResizeEvent *) override;
 
 public slots:
     void urlChanged(const QUrl &);
     void read(const Method &, const QByteArray &);
+    void showDiloagMessages(User *);
 
     void startDownloadAudio(Audio *);
 

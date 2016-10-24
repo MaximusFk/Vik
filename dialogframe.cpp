@@ -2,13 +2,14 @@
 #include "ui_dialogframe.h"
 #include <QDate>
 
-DialogFrame::DialogFrame(std::shared_ptr<Message> message, QWidget *parent) :
+DialogFrame::DialogFrame(std::shared_ptr<User> user, std::shared_ptr<Message> message, QWidget *parent) :
     QFrame(parent),
+    user(user),
     ui(new Ui::DialogFrame)
 {
     ui->setupUi(this);
     ui->text->setText(QString::fromStdString(message->getText()));
-    QDateTime date = QDateTime::fromMSecsSinceEpoch(message->getDate());
+    QDateTime date = QDateTime::fromTime_t(message->getDate());
     if(date.date() == QDateTime::currentDateTime().date())
     {
         QString time = QString::number(date.time().hour());
@@ -25,7 +26,10 @@ DialogFrame::DialogFrame(std::shared_ptr<Message> message, QWidget *parent) :
         timeD += QString::number(date.date().year());
         ui->label->setText(timeD);
     }
-
+    QString name = QString::fromStdString(user->getFirstName());
+    name += ' ';
+    name += QString::fromStdString(user->getLastName());
+    ui->user->setText(name);
 }
 
 DialogFrame::~DialogFrame()
@@ -33,7 +37,8 @@ DialogFrame::~DialogFrame()
     delete ui;
 }
 
-void DialogFrame::finished()
-{
 
+void DialogFrame::mouseReleaseEvent(QMouseEvent *event)
+{
+    emit click(user.get());
 }

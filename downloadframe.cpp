@@ -9,11 +9,13 @@ DownloadFrame::DownloadFrame(QString uri, QString path, QWidget *parent) :
 {
     ui->setupUi(this);
     file = new QFile(path, this);
+    file->open(QIODevice::ReadWrite);
     downloader = new FileDownloader(uri, file, this);
-    ui->uri->setText(uri);
+    ui->uri->setText(uri.split('?').at(0));
     ui->file->setText(path);
     connect(downloader, &FileDownloader::finishedDownload, this, &DownloadFrame::finished);
     connect(downloader, &FileDownloader::progressDownload, this, &DownloadFrame::progress);
+    connect(ui->cancel, &QPushButton::clicked, this, &DownloadFrame::cancel);
 }
 
 DownloadFrame::~DownloadFrame()
@@ -21,6 +23,17 @@ DownloadFrame::~DownloadFrame()
     delete ui;
     file->deleteLater();
     downloader->deleteLater();
+}
+
+void DownloadFrame::cancel()
+{
+    if(downloader != nullptr)
+    {
+        file->close();
+        downloader->cancel();
+        downloader->deleteLater();
+        downloader = nullptr;
+    }
 }
 
 void DownloadFrame::progress(qint64 len, qint64 pos)

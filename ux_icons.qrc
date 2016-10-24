@@ -10,5 +10,13 @@
         <file>pause.png</file>
         <file>smile-button.png</file>
         <file>add-button.png</file>
+        <file>refresh-button.png</file>
+        <file>cancel-button.png</file>
+        <file>favorite.png</file>
+        <file>like.png</file>
+        <file>stop.png</file>
+    </qresource>
+    <qresource prefix="/files/emoji">
+        <file>emoji.json</file>
     </qresource>
 </RCC>

@@ -1,25 +1,31 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include <QLabel>
+#include <QDir>
 
 #include <permissions.h>
 
+#include <user.h>
+#include "cache.h"
+
+#include "dialogframe.h"
+#include "audioframe.h"
+#include "messageframe.h"
+#include "loginwidget.h"
+#include "audioplayer.h"
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    account(nullptr)
+    factory(new VKObjectFactory()),
+    account(nullptr),
+    mainCache(new Cache(new QDir("./"), this)),
+    audioPlayer(new AudioPlayer),
+    current_state(IDLE),
+    ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-//    AudioFrame * last = nullptr;
-//    for(int i = 30; i > 0; i--)
-//    {
-//        AudioFrame * frame = new AudioFrame(ui->audio);
-//        if(last != nullptr)
-//            frame->move(2, last->height() + last->y() + 2);
-//        last = frame;
-//        frames.append(frame);
-//    }
 
+    // Получение аккаунта пользователя
     if(!account) {
         if(!loadAccountFromDisk())
         {
@@ -33,26 +39,19 @@ MainWindow::MainWindow(QWidget *parent) :
             connect(login, &LoginWidget::urlChanged, this, &MainWindow::urlChanged);
             login->show();
         }
-        else
-            printAccount();
     }
     this->updater = new UpdateThread(account, this);
     connect(this->updater, &UpdateThread::readFinished, this, &MainWindow::read);
-//    QNetworkRequest r;
-//    VKApi::Method getAudio = VKApi::Audio::get.createMethod();
-//    getAudio["count"] = "20";
-//    QUrl url(QString(getAudio.getUri(account->getAccessToken()).c_str()));
-//    r.setUrl(url);
-//    reply = manager.get(r);
-//    connect(reply, &QNetworkReply::readyRead, this, &MainWindow::loadAudios);
-//    QLabel * l = new QLabel(account->getAccessToken().c_str());
-//    l->show();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
     delete updater;
+    delete mainCache;
+    if(audioPlayer->isVisible())
+        audioPlayer->close();
+    audioPlayer->deleteLater();
 }
 
 void MainWindow::wheelEvent(QWheelEvent * event)
@@ -61,11 +60,11 @@ void MainWindow::wheelEvent(QWheelEvent * event)
     QWidget * current = nullptr;
     if(ui->tabWidget->currentIndex() == ui->tabWidget->indexOf(ui->audio))
     {
-        current = ui->audio;
+        current = ui->audio_list;
     }
     if(ui->tabWidget->currentIndex() == ui->tabWidget->indexOf(ui->message))
     {
-        current = this->focusWidget();
+        current = ui->messages;
     }
 
     if(!current || current->children().isEmpty())
@@ -91,11 +90,6 @@ void MainWindow::wheelEvent(QWheelEvent * event)
     event->accept();
 }
 
-void MainWindow::resizeEvent(QResizeEvent * event)
-{
-
-}
-
 void MainWindow::urlChanged(const QUrl & url)
 {
     if(url.url().indexOf("access_token") >= 0){
@@ -107,7 +101,6 @@ void MainWindow::urlChanged(const QUrl & url)
         catch(exception v) {
             // ...
         }
-        printAccount();
         login->close();
     }
 }
@@ -135,18 +128,42 @@ void MainWindow::showLoginWindow()
 
 void MainWindow::read(const Method & method, const QByteArray & bytes)
 {
+    using namespace VKApi;
     nlohmann::json response = response.parse(bytes.toStdString());
     Log::i("Called \'read\'");
     Log::i(response.dump(1).c_str());
-    if(method == VKApi::Messages::getHistory)
+    if(method == Messages::getHistory)
     {
         Log::i("Id is founded, updating");
         this->updateMessages(response);
     }
-    if(method == VKApi::Audio::get)
+    if(method == Audio::get)
     {
         Log::i("Id is founded, updating");
         this->loadAudios(response);
+    }
+    if(method == Messages::getDialogs && current_state == DIALOG_LOADING)
+    {
+        nlohmann::json array = response["response"]["items"];
+        Method m = Users::get;
+        for(auto it : array)
+        {
+            std::shared_ptr<Message> message = factory->buildMessage(it["message"]);
+            object_buffer.push_back(message);
+            m.add("user_ids", message->getUserId());
+        }
+        updater->addMethodToQueue(m);
+    }
+    if(method == Users::get && current_state == DIALOG_LOADING)
+    {
+        nlohmann::json array = response["response"];
+        for(auto it : array)
+        {
+            object_buffer.push_back(factory->buildUser(it));
+        }
+        constructFrameFromBuffer(current_state);
+        current_state = IDLE;
+        object_buffer.clear();
     }
 }
 
@@ -171,8 +188,7 @@ void MainWindow::updateMessages(nlohmann::json json)
     VKObjectFactory f;
     nlohmann::json array = json["response"]["items"];
     MessageFrame * last = nullptr;
-    for(QObject * ob : ui->messages->children())
-        ob->deleteLater();
+    clearAllChildren(ui->messages);
     for(auto it : array)
     {
         MessageFrame * frame = new MessageFrame(f.buildMessage(it), ui->messages);
@@ -211,27 +227,17 @@ bool MainWindow::loadAccountFromDisk()
     return false;
 }
 
-void MainWindow::printAccount()
-{
-    if(account)
-    {
-        ui->accessToken->setText(account->getAccessToken().c_str());
-        ui->userId->setText(QString().setNum(account->getUserId()));
-    }
-}
-
 void MainWindow::loadAudios(nlohmann::json json)
 {
     VKObjectFactory f;
     nlohmann::json array = json["response"]["items"];
     AudioFrame * last = nullptr;
-    for(QObject * ob : ui->audio->children())
-        ob->deleteLater();
+    clearAllChildren(ui->audio_list);
     for(auto it : array)
     {
-        AudioFrame * frame = new AudioFrame(f.buildAudio(it), ui->audio);
+        AudioFrame * frame = new AudioFrame(f.buildAudio(it), ui->audio_list);
+        frame->setAudioPlayer(audioPlayer);
         connect(frame, &AudioFrame::downloadClicked, this, &MainWindow::startDownloadAudio);
-        //AudioFrame * frame = new AudioFrame(f.buildObject<Audio>(it), ui->audio);
         frame->show();
         if(last != nullptr)
             frame->move(2, last->height() + last->y() + 2);
@@ -239,14 +245,71 @@ void MainWindow::loadAudios(nlohmann::json json)
     }
 }
 
+void MainWindow::showDiloagMessages(User * user)
+{
+    this->updater->addMethodToQueue(VKApi::Messages::getHistory.createMethod()
+                                    .add("user_id", user->getId())
+                                    .add("count", 20)
+                                    );
+    this->user = std::shared_ptr<User>(user);
+}
+
+void MainWindow::changeState(MainWindow::State state)
+{
+    current_state = state;
+    Log::i((std::string("set new status: ") + std::to_string(state)));
+}
+
+///TODO: Плохо спроектировано!!!! Переделать!!!
+void MainWindow::constructFrameFromBuffer(MainWindow::State state)
+{
+    Log::i("called frame constructor");
+    switch(state)
+    {
+    case DIALOG_LOADING:
+        int y = 0;
+        clearAllChildren(ui->dialogs);
+        for(std::shared_ptr<IVKObject> ob : object_buffer)
+        {
+            std::shared_ptr<Message> message = std::dynamic_pointer_cast<Message>(ob);
+            if(message)
+            {
+                for(std::shared_ptr<IVKObject> vv : object_buffer)
+                {
+                    std::shared_ptr<User> us = std::dynamic_pointer_cast<User>(vv);
+                    if(us && us->getId() == message->getUserId())
+                    {
+                        DialogFrame * frame = new DialogFrame(us, message, ui->dialogs);
+                        connect(frame, &DialogFrame::click, this, &MainWindow::showDiloagMessages);
+                        frame->move(0, y);
+                        y += frame->height();
+                        frame->show();
+                        break;
+                    }
+                }
+            }
+        }
+        break;
+    }
+}
+
+void MainWindow::clearAllChildren(QWidget * widget)
+{
+    for(QObject * child : widget->children())
+        child->deleteLater();
+}
+
+// -------------------------------Кнопки интерфейса-------------------------------------
+
 void MainWindow::on_tabWidget_currentChanged(int index)
 {
     if(ui->tabWidget->indexOf(ui->message) == index)
     {
-        VKApi::Method mess = VKApi::Messages::getHistory.createMethod();
-        mess["user_id"] = std::to_string(account->getUserId());
-        mess["count"] = "10";
-        this->updater->addMethodToQueue(mess);
+        this->updater->addMethodToQueue
+                (
+                    VKApi::Messages::getDialogs.createMethod()
+                );
+        changeState(DIALOG_LOADING);
     }
     if(ui->tabWidget->indexOf(ui->audio) == index)
     {
@@ -255,23 +318,23 @@ void MainWindow::on_tabWidget_currentChanged(int index)
         this->updater->addMethodToQueue(audios);
     }
 }
-
+//Сброс аккаунта
 void MainWindow::on_action_triggered()
 {
     account.reset();
     showLoginWindow();
 }
-
+//Отправить сообщение
 void MainWindow::on_send_clicked()
 {
-    if(!ui->text->toPlainText().isEmpty())
+    if(!ui->text->toPlainText().isEmpty() && user)
     {
         VKApi::Method send = VKApi::Messages::send.createMethod();
-        send["user_id"] = std::to_string(account->getUserId());
+        send["user_id"] = std::to_string(user->getId());
         send["message"] = ui->text->toPlainText().toStdString().c_str();
         this->updater->addMethodToQueue(send);
         VKApi::Method mess = VKApi::Messages::getHistory.createMethod();
-        mess["user_id"] = std::to_string(account->getUserId());
+        mess["user_id"] = std::to_string(user->getId());
         mess["count"] = "10";
         this->updater->addMethodToQueue(mess);
         ui->text->clear();

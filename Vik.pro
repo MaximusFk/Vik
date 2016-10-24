@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui webenginewidgets network
+QT       += core gui webenginewidgets network multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,6 +12,8 @@ TARGET = Vik
 TEMPLATE = app
 
 QMAKE_CXXFLAGS += -std=c++11
+
+VERSION = 0.1
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -23,7 +25,8 @@ SOURCES += main.cpp\
     updatethread.cpp \
     downloadframe.cpp \
     cache.cpp \
-    audioplayer.cpp
+    audioplayer.cpp \
+    contentframe.cpp
 
 HEADERS  += mainwindow.h \
     audioframe.h \
@@ -35,7 +38,8 @@ HEADERS  += mainwindow.h \
     Log.h \
     downloadframe.h \
     cache.h \
-    audioplayer.h
+    audioplayer.h \
+    contentframe.h
 
 FORMS    += mainwindow.ui \
     audioframe.ui \
@@ -49,15 +53,18 @@ FORMS    += mainwindow.ui \
 RESOURCES += \
     ux_icons.qrc
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/release/ -lVKApiCPPLibrary
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/debug/ -lVKApiCPPLibrary
-else:unix:!macx: LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/ -lVKApiCPPLibrary
+INCLUDEPATH += $$PWD/../VKApiCPPLibrary
+DEPENDPATH += $$PWD/../VKApiCPPLibrary
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/release/ -lVKApiCPPLibrary
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/debug/ -lVKApiCPPLibrary
+else:unix: LIBS += -L$$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/ -lVKApiCPPLibrary
 
 INCLUDEPATH += $$PWD/../VKApiCPPLibrary
 DEPENDPATH += $$PWD/../VKApiCPPLibrary
 
-win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/release/libVKApiCPPLibrary.a
-else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/debug/libVKApiCPPLibrary.a
-else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/release/VKApiCPPLibrary.lib
-else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/debug/VKApiCPPLibrary.lib
-else:unix:!macx: PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_Qt_Version_GCC_64bit-Debug/libVKApiCPPLibrary.a
+win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/release/libVKApiCPPLibrary.a
+else:win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/debug/libVKApiCPPLibrary.a
+else:win32:!win32-g++:CONFIG(release, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/release/VKApiCPPLibrary.lib
+else:win32:!win32-g++:CONFIG(debug, debug|release): PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/debug/VKApiCPPLibrary.lib
+else:unix: PRE_TARGETDEPS += $$PWD/../build-VKApiCPPLibrary-Desktop_Qt_5_7_0_GCC_64bit-Debug/libVKApiCPPLibrary.a

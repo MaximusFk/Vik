@@ -6,9 +6,14 @@
 #include "photo.h"
 
 #include <QGraphicsView>
+#include <QDate>
+
+#include "contentframe.h"
 
 MessageFrame::MessageFrame(QWidget *parent) :
     QFrame(parent),
+    text(nullptr),
+    audioContent(nullptr),
     ui(new Ui::MessageFrame)
 {
     ui->setupUi(this);
@@ -20,18 +25,37 @@ MessageFrame::MessageFrame(QWidget *parent) :
 MessageFrame::MessageFrame(std::shared_ptr<Message> message, QWidget *parent) :
     MessageFrame(parent)
 {
-    int allHeight = 0;
+    QSize baseSize(0, 0);
+    baseSize.rheight() += ui->time->height();
     this->message = message;
+    QDateTime md = QDateTime::fromTime_t(message->getDate());
+    QString time;
+    time = QString::number(md.time().hour());
+    time += ':';
+    time += QString::number(md.time().minute());
+    if(md.date() != QDateTime::currentDateTime().date())
+    {
+        time += ' ';
+        time += QString::number(md.date().day());
+        time += '.';
+        time += QString::number(md.date().month());
+        time += '.';
+        time += QString::number(md.date().year());
+    }
+    ui->time->setText(time);
+    ui->time->setAlignment(Qt::AlignVCenter | (this->message->isOut() ? Qt::AlignRight : Qt::AlignLeft));
     if(!this->message->getText().empty())
     {
         text = new QLabel(this);
         text->setText(QString::fromStdString(this->message->getText()));
         text->setWordWrap(true);
-        if(this->message->isOut())
-        {
-            this->text->move(this->width() - text->width(), text->y());
-        }
-        allHeight += text->height();
+        text->setAlignment(ui->time->alignment());
+        text->setBaseSize(this->width(), text->height());
+//        if(this->message->isOut())
+//        {
+//            this->text->move(this->width() - text->width(), text->y());
+//        }
+        baseSize.rheight() += text->height();
         if(!this->message->isRead())
         {
             QPalette palette;
@@ -41,11 +65,9 @@ MessageFrame::MessageFrame(std::shared_ptr<Message> message, QWidget *parent) :
         }
     }
     MessageAttachments a = this->message->getMessageAttachments();
-    Log::i(std::to_string(a.size()).c_str());
     if(a.size() > 0)
     {
-        Log::i("entering to AudioFrameConstructor MessageFrame");
-        AudioFrame * last = nullptr;
+        Log::i("entering to Attachments");
         for(int i = 0; i < a.size(); ++i)
         {
             if(a[i])
@@ -53,18 +75,20 @@ MessageFrame::MessageFrame(std::shared_ptr<Message> message, QWidget *parent) :
                 switch (a[i]->getType()) {
                 case ObjectType::AUDIO:
                 {
+                    Log::i("Audio");
+                    if(audioContent == nullptr)
+                        audioContent = new AudioContentFrame(this);
                     std::shared_ptr<Audio> audio = std::dynamic_pointer_cast<Audio>(a[i]);
-                    AudioFrame * frame = new AudioFrame(audio, this);
+                    AudioFrame * frame = new AudioFrame(audio, audioContent);
+                    audioContent->addFrame(frame);
+                    audioContent->move(0, (this->text != nullptr ? this->text->height() : 0));
                     frame->show();
-                    if(last != nullptr)
-                        frame->move(0, (allHeight += last->height() + last->y() + 2));
-                    else
-                        frame->move(0, allHeight);
-                    allHeight += frame->height();
+                    audioContent->show();
                 }
                     break;
                 case ObjectType::PHOTO:
                 {
+                    Log::i("Photo");
                     std::shared_ptr<Photo> photo = std::dynamic_pointer_cast<Photo>(a[i]);
                 }
                     break;
@@ -74,8 +98,13 @@ MessageFrame::MessageFrame(std::shared_ptr<Message> message, QWidget *parent) :
 
             }
         }
+        Log::i("leaving Attachments");
+        if(audioContent)
+            baseSize.rheight() += audioContent->height();
     }
-    this->setMinimumHeight(allHeight);
+    ui->time->move(0, baseSize.height() - ui->time->height());
+    this->setMinimumHeight(baseSize.height());
+    //this->setGeometry(this->x(), this->y(), baseSize.width(), baseSize.height());
 }
 
 MessageFrame::~MessageFrame()

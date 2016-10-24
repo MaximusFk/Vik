@@ -21,6 +21,8 @@ public:
     explicit DownloadFrame(QString uri, QString path, QWidget *parent = 0);
     ~DownloadFrame();
 
+    void cancel();
+
 public slots:
     void progress(qint64, qint64);
     void finished();

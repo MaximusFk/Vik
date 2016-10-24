@@ -67,11 +67,16 @@ class FileDownloader : public QObject
     QIODevice * buffer;
 
 public:
+    explicit FileDownloader(QObject * parent = nullptr);
     explicit FileDownloader(QString uri, QIODevice * device, QObject * parent = 0);
     virtual ~FileDownloader();
 
+    void startDownload(QString, QIODevice *);
+    void cancel();
+
     bool isRunning() const;
     QString getUri() const;
+    QUrl getQUrl() const;
 
 private slots:
     void readBlock();

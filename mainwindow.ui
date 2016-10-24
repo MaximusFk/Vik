@@ -10,6 +10,24 @@
     <height>517</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>757</width>
+    <height>517</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>757</width>
+    <height>517</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Vik ВКонтакте</string>
   </property>
@@ -53,7 +71,7 @@
      </size>
     </property>
     <property name="elideMode">
-     <enum>Qt::ElideNone</enum>
+     <enum>Qt::ElideRight</enum>
     </property>
     <property name="usesScrollButtons">
      <bool>false</bool>
@@ -87,10 +105,10 @@
      <widget class="QWidget" name="dialogs" native="true">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>261</width>
-        <height>421</height>
+        <x>0</x>
+        <y>0</y>
+        <width>271</width>
+        <height>431</height>
        </rect>
       </property>
       <property name="focusPolicy">
@@ -104,9 +122,9 @@
       <property name="geometry">
        <rect>
         <x>280</x>
-        <y>10</y>
+        <y>0</y>
         <width>421</width>
-        <height>371</height>
+        <height>381</height>
        </rect>
       </property>
       <property name="focusPolicy">
@@ -133,6 +151,9 @@
       </property>
       <property name="frameShadow">
        <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWrapColumnOrWidth">
+       <number>0</number>
       </property>
      </widget>
      <widget class="QPushButton" name="send">
@@ -189,40 +210,73 @@
      <attribute name="title">
       <string/>
      </attribute>
+     <widget class="QFrame" name="audio_menu">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>171</width>
+        <height>435</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QFrame" name="audio_list">
+      <property name="geometry">
+       <rect>
+        <x>180</x>
+        <y>0</y>
+        <width>500</width>
+        <height>435</height>
+       </rect>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
+      </property>
+      <property name="lineWidth">
+       <number>20</number>
+      </property>
+      <property name="midLineWidth">
+       <number>90</number>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="downloads">
+     <attribute name="icon">
+      <iconset resource="ux_icons.qrc">
+       <normaloff>:/icons/buttons/download-button.png</normaloff>:/icons/buttons/download-button.png</iconset>
+     </attribute>
      <attribute name="title">
-      <string>Загрузки</string>
+      <string/>
      </attribute>
     </widget>
    </widget>
-   <widget class="QLabel" name="accessToken">
+   <widget class="QPushButton" name="pushButton_2">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>450</y>
-      <width>531</width>
-      <height>17</height>
+      <x>0</x>
+      <y>440</y>
+      <width>41</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
-     <string>TextLabel</string>
+     <string/>
     </property>
-   </widget>
-   <widget class="QLabel" name="userId">
-    <property name="geometry">
-     <rect>
-      <x>580</x>
-      <y>450</y>
-      <width>151</width>
-      <height>17</height>
-     </rect>
+    <property name="icon">
+     <iconset resource="ux_icons.qrc">
+      <normaloff>:/icons/buttons/refresh-button.png</normaloff>:/icons/buttons/refresh-button.png</iconset>
     </property>
-    <property name="text">
-     <string>TextLabel</string>
+    <property name="iconSize">
+     <size>
+      <width>20</width>
+      <height>20</height>
+     </size>
     </property>
-    <property name="alignment">
-     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+    <property name="flat">
+     <bool>true</bool>
     </property>
    </widget>
   </widget>

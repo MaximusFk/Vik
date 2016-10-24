@@ -9,6 +9,8 @@ namespace Ui {
 class MessageFrame;
 }
 
+class AudioContentFrame;
+
 class MessageFrame : public QFrame
 {
     Q_OBJECT
@@ -16,6 +18,7 @@ class MessageFrame : public QFrame
     std::shared_ptr<Message> message;
 
     QLabel *text;
+    AudioContentFrame * audioContent;
 
     explicit MessageFrame(QWidget *parent = 0);
 public:

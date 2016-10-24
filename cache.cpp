@@ -1,11 +1,18 @@
 #include "cache.h"
 #include "updatethread.h"
 
+#include <QBuffer>
+#include <QDir>
+
 #include <QFile>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 Cache::Cache(QObject *parent) :
     QObject(parent),
     downloader(nullptr),
+    currentNode(0),
     current(nullptr),
     buffer(nullptr),
     cacheDir(nullptr)
@@ -18,28 +25,23 @@ Cache::Cache(QDir *path, QObject *parent) :
     cacheDir = path;
 }
 
-void Cache::enqueue(QString uri)
+void Cache::enqueue(QString uri, int id, bool cacheOnDisk)
 {
-    if(cache.contains(uri))
+    if(cache.contains(id))
     {
-        emit finished(uri, cache[uri]);
+        emit finished(uri, cache[id]);
     }
     else
     {
-        queue.enqueue(uri);
+        queue.enqueue({id, uri});
         updateStatus();
     }
+    saveToDiskf = cacheOnDisk;
 }
 
-QByteArray * Cache::getData(QString uri)
+bool Cache::cachedOnDisk(int id) const
 {
-    if(cache.contains(uri))
-        return cache[uri];
-    else
-    {
-        enqueue(uri);
-        return nullptr;
-    }
+    return diskCaches.indexOf(id) >= 0;
 }
 
 void Cache::cancel()
@@ -54,8 +56,6 @@ void Cache::cancel()
         downloader = nullptr;
         buffer->deleteLater();
         buffer = nullptr;
-        downloader->deleteLater();
-        downloader = nullptr;
     }
 }
 
@@ -65,7 +65,7 @@ void Cache::updateStatus()
     {
         if(downloader->isRunning())
             return;
-        cache.insert(downloader->getUri(), current);
+        cache.insert(currentNode, current);
         current = nullptr;
         disconnect(downloader, &FileDownloader::progressDownload, this, &Cache::_proccess);
         disconnect(downloader, &FileDownloader::finishedDownload, this, &Cache::_finished);
@@ -76,18 +76,66 @@ void Cache::updateStatus()
     }
     if(!queue.isEmpty())
     {
-        emit nextUri(queue.head());
+        emit nextUri(queue.head().uri);
         current = new QByteArray();
         buffer = new QBuffer(current, this);
-        downloader = new FileDownloader(queue.dequeue(), buffer, this);
+        currentNode = queue.dequeue();
+        downloader = new FileDownloader(currentNode.uri, buffer, this);
         connect(downloader, &FileDownloader::progressDownload, this, &Cache::_proccess);
         connect(downloader, &FileDownloader::finishedDownload, this, &Cache::_finished);
     }
 }
 
+bool Cache::saveToDisk(int id, QByteArray * buffer)
+{
+    QFile jsonFile(this->cacheDir->absoluteFilePath("cache.json"));
+    jsonFile.open(QIODevice::ReadWrite);
+    QJsonDocument json = jsonFile.exists()
+            ? QJsonDocument::fromBinaryData(jsonFile.readAll())
+            : QJsonDocument(QJsonArray());
+    Node node = {QFile(this->cacheDir->absoluteFilePath(QString::number(id))), id};
+    QJsonObject jnode;
+    jnode.insert("file", node.file.fileName());
+    jnode.insert("id", id);
+    json.array().append(jnode);
+    jsonFile.write(json.toBinaryData());
+    jsonFile.flush();
+    jsonFile.close();
+    node.file.open(QIODevice::WriteOnly);
+    node.file.write(*buffer);
+    node.file.flush();
+    node.file.close();
+    return true;
+}
+
+bool Cache::loadFromDisk(int id)
+{
+    Node node = getNodeById(id);
+    if(node.id != 0 && node.file.exists())
+    {
+        node.file.open(QIODevice::ReadOnly);
+        QByteArray * array = new QByteArray(node.file.readAll());
+        CacheNode cnode = node.id;
+        cache.insert(cnode, array);
+        node.file.close();
+        return true;
+    }
+    return false;
+}
+
+Cache::Node Cache::getNodeById(int id) const
+{
+    int i = diskCaches.indexOf(id);
+    return i >= 0 ? diskCaches[i] : Node(QFile(), 0);
+}
+
 void Cache::_finished()
 {
-    emit finished(downloader->getUri(), current);
+    if(saveToDiskf)
+    {
+        saveToDisk(currentNode.id, current);
+    }
+    emit finished(currentNode.uri, current);
     updateStatus();
 }
 

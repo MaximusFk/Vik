@@ -109,13 +109,21 @@ void UpdateThread::finished()
     updateReplyStatus();
 }
 
+FileDownloader::FileDownloader(QObject *parent) :
+    QObject(parent),
+    uri(""),
+    manager(new QNetworkAccessManager(this)),
+    reply(nullptr),
+    buffer(nullptr)
+{
+}
+
 FileDownloader::FileDownloader(QString uri, QIODevice *device, QObject *parent) :
     QObject(parent),
     uri(uri)
 {
     manager = new QNetworkAccessManager(this);
     buffer = device;
-    buffer->open(QIODevice::ReadWrite);
     QNetworkRequest request((QUrl(uri)));
     reply = manager->get(request);
 
@@ -134,8 +142,32 @@ FileDownloader::~FileDownloader()
         reply->deleteLater();
     }
     manager->deleteLater();
-    buffer->close();
-    buffer->deleteLater();
+}
+
+void FileDownloader::startDownload(QString uri, QIODevice * device)
+{
+    buffer = device;
+    QNetworkRequest request((QUrl(uri)));
+    this->uri = uri;
+    reply = manager->get(request);
+
+    connect(reply, &QNetworkReply::readyRead, this, &FileDownloader::readBlock);
+    connect(reply, &QNetworkReply::finished, this, &FileDownloader::finished);
+    connect(reply, &QNetworkReply::downloadProgress, this, &FileDownloader::download);
+}
+
+void FileDownloader::cancel()
+{
+    if(reply != nullptr)
+    {
+        disconnect(reply, &QNetworkReply::readyRead, this, &FileDownloader::readBlock);
+        disconnect(reply, &QNetworkReply::finished, this, &FileDownloader::finished);
+        disconnect(reply, &QNetworkReply::downloadProgress, this, &FileDownloader::download);
+        reply->deleteLater();
+    }
+    reply = nullptr;
+    buffer = nullptr;
+    uri = "";
 }
 
 bool FileDownloader::isRunning() const
@@ -146,6 +178,11 @@ bool FileDownloader::isRunning() const
 QString FileDownloader::getUri() const
 {
     return uri;
+}
+
+QUrl FileDownloader::getQUrl() const
+{
+    return QUrl(getUri());
 }
 
 QIODevice * FileDownloader::getDevice()
